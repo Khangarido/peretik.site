@@ -19,6 +19,11 @@ body {
   border-color: var(--border);
 }
 
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
 ::selection {
   background-color: #CA8A04;
   color: #000000;

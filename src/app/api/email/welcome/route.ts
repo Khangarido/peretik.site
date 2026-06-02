@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { resend, FROM } from '@/lib/resend/client'
+import { getResend, FROM } from '@/lib/resend/client'
 import { WelcomeMail } from '@/lib/resend/templates/WelcomeMail'
 
 export async function POST(req: NextRequest) {
@@ -9,6 +9,8 @@ export async function POST(req: NextRequest) {
     if (!email || !full_name) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
+
+    const resend = getResend()
 
     const { error } = await resend.emails.send({
       from: FROM,

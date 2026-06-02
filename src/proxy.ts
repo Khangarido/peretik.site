@@ -3,21 +3,18 @@ import { NextResponse, type NextRequest } from 'next/server'
 import type { CookieOptions } from '@supabase/ssr'
 
 const ADMIN_ROUTES = ['/admin']
-
-// Routes that require a logged-in user.
-// Note: /checkout/success and /checkout/cancel are intentionally excluded —
-// byl.mn redirects back to these URLs without a session cookie.
 const AUTH_REQUIRED_ROUTES = ['/orders', '/account', '/wishlist', '/checkout']
-
-// Checkout callback pages must remain publicly accessible for byl.mn redirects
 const CHECKOUT_PUBLIC_PATHS = ['/checkout/success', '/checkout/cancel']
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
+const SUPABASE_READY = SUPABASE_URL.startsWith('https://') && SUPABASE_ANON_KEY.length > 10
 
 function isAdminRoute(pathname: string) {
   return ADMIN_ROUTES.some((r) => pathname === r || pathname.startsWith(r + '/'))
 }
 
 function isAuthRequiredRoute(pathname: string) {
-  // Never block the payment callback pages
   if (CHECKOUT_PUBLIC_PATHS.some((p) => pathname.startsWith(p))) return false
   return AUTH_REQUIRED_ROUTES.some((r) => pathname === r || pathname.startsWith(r + '/'))
 }
@@ -30,12 +27,11 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   let response = NextResponse.next({ request })
 
-  // ── CORS headers for all /api/* routes ──────────────────────────────────────
+  // ── CORS for /api/* ──────────────────────────────────────────────────────────
   if (isApiRoute(pathname)) {
     const origin = request.headers.get('origin') ?? ''
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://peretik.site'
 
-    // Handle OPTIONS preflight
     if (request.method === 'OPTIONS') {
       return new NextResponse(null, {
         status: 204,
@@ -48,29 +44,26 @@ export async function proxy(request: NextRequest) {
       })
     }
 
-    // Allow from same-origin and the production domain
-    const allowedOrigins = [siteUrl, 'http://localhost:3000']
+    const allowedOrigins = [siteUrl, 'http://localhost:3000', 'http://localhost:3001']
     if (!origin || allowedOrigins.includes(origin)) {
       response.headers.set('Access-Control-Allow-Origin', origin || siteUrl)
       response.headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
       response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
     }
 
-    // TODO: Rate-limit /api/analytics/track with Vercel KV to ~60 req/min/IP:
-    //   import { kv } from '@vercel/kv'
-    //   const key = `rl:${request.ip}:analytics`
-    //   const count = await kv.incr(key)
-    //   if (count === 1) await kv.expire(key, 60)
-    //   if (count > 60) return new NextResponse('Too Many Requests', { status: 429 })
-
     return response
   }
 
-  // Build a Supabase client that can read/write cookies in middleware
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+  // ── Skip auth logic if Supabase is not configured yet ───────────────────────
+  if (!SUPABASE_READY) {
+    return response
+  }
+
+  // ── Build Supabase client ────────────────────────────────────────────────────
+  let user = null
+
+  try {
+    const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       cookies: {
         getAll() {
           return request.cookies.getAll()
@@ -85,43 +78,44 @@ export async function proxy(request: NextRequest) {
           }
         },
       },
+    })
+
+    const { data } = await supabase.auth.getUser()
+    user = data.user
+
+    // ── Admin routes ───────────────────────────────────────────────────────────
+    if (isAdminRoute(pathname)) {
+      if (!user) {
+        const loginUrl = new URL('/login', request.url)
+        loginUrl.searchParams.set('redirect', pathname)
+        return NextResponse.redirect(loginUrl)
+      }
+
+      const { data: profile } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      if (!profile || profile.role !== 'admin') {
+        return NextResponse.redirect(new URL('/', request.url))
+      }
     }
-  )
 
-  // Refresh the session token if it has expired
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  // ── Admin routes ─────────────────────────────────────────────────────────────
-  if (isAdminRoute(pathname)) {
-    if (!user) {
+    // ── Auth-required routes ───────────────────────────────────────────────────
+    if (isAuthRequiredRoute(pathname) && !user) {
       const loginUrl = new URL('/login', request.url)
       loginUrl.searchParams.set('redirect', pathname)
       return NextResponse.redirect(loginUrl)
     }
 
-    const { data: profile } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile || profile.role !== 'admin') {
+    // ── Redirect logged-in users away from /login and /register ───────────────
+    if (user && (pathname === '/login' || pathname === '/register')) {
       return NextResponse.redirect(new URL('/', request.url))
     }
-  }
-
-  // ── Auth-required routes ──────────────────────────────────────────────────────
-  if (isAuthRequiredRoute(pathname) && !user) {
-    const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('redirect', pathname)
-    return NextResponse.redirect(loginUrl)
-  }
-
-  // ── Redirect logged-in users away from /login and /register ─────────────────
-  if (user && (pathname === '/login' || pathname === '/register')) {
-    return NextResponse.redirect(new URL('/', request.url))
+  } catch {
+    // Supabase unreachable — allow the request through so the page can render
+    // its own error state rather than crashing here.
   }
 
   return response
@@ -129,12 +123,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match every path EXCEPT:
-     *   - Next.js internals (_next/static, _next/image)
-     *   - Public static assets (svg, png, jpg, etc.)
-     *   - favicon.ico
-     */
     '/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$).*)',
   ],
 }

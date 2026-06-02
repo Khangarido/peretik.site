@@ -1,15 +1,15 @@
 import Link from 'next/link'
 
 const SHOP_LINKS = [
-  { href: '/shop', label: 'Бүх бүтээгдэхүүн' },
+  { href: '/shop', label: 'All Products' },
   { href: '/shop?presale=true', label: 'Pre-Sale' },
-  { href: '/shop?sort=newest', label: 'Шинэ ирэлт' },
+  { href: '/shop?sort=newest', label: 'New Drops' },
 ]
 
 const ACCOUNT_LINKS = [
-  { href: '/orders', label: 'Захиалга хянах' },
-  { href: '/wishlist', label: 'Хүсэлтийн жагсаалт' },
-  { href: '/account', label: 'Бүртгэл' },
+  { href: '/orders', label: 'Orders' },
+  { href: '/wishlist', label: 'Wishlist' },
+  { href: '/account', label: 'Account' },
 ]
 
 export function Footer() {
@@ -25,8 +25,8 @@ export function Footer() {
             >
               PERETIK
             </Link>
-            <p className="mt-4 text-sm text-zinc-500 leading-relaxed max-w-xs">
-              Монгол залуусын өмсгөл. Гудамжны соёлыг уламжлалтай нэгтгэнэ.
+            <p className="mt-4 text-sm text-zinc-600 leading-relaxed max-w-xs">
+              Mongolian streetwear.<br />Not for everyone.
             </p>
             <div className="flex gap-5 mt-6">
               <a
@@ -51,7 +51,7 @@ export function Footer() {
           {/* Shop links */}
           <div>
             <h4 className="text-[10px] font-bold tracking-[0.3em] uppercase text-zinc-500 mb-5">
-              Дэлгүүр
+              Shop
             </h4>
             <ul className="space-y-3">
               {SHOP_LINKS.map((link) => (
@@ -70,7 +70,7 @@ export function Footer() {
           {/* Account links */}
           <div>
             <h4 className="text-[10px] font-bold tracking-[0.3em] uppercase text-zinc-500 mb-5">
-              Миний бүртгэл
+              Account
             </h4>
             <ul className="space-y-3">
               {ACCOUNT_LINKS.map((link) => (
@@ -90,7 +90,7 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="mt-14 pt-6 border-t border-white/[0.06] flex flex-col sm:flex-row justify-between items-center gap-3">
           <p className="text-xs text-zinc-700">
-            © {new Date().getFullYear()} Peretik. Бүх эрх хуулиар хамгаалагдсан.
+            © {new Date().getFullYear()} Peretik. All rights reserved.
           </p>
           <p className="text-xs text-zinc-700 tracking-widest">peretik.site</p>
         </div>

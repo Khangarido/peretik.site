@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
-import { resend, FROM } from '@/lib/resend/client'
+import { getResend, FROM } from '@/lib/resend/client'
 import { ShippingUpdate } from '@/lib/resend/templates/ShippingUpdate'
 
 export async function POST(req: NextRequest) {
@@ -29,6 +29,8 @@ export async function POST(req: NextRequest) {
     if (!userEmail) {
       return NextResponse.json({ error: 'No user email' }, { status: 400 })
     }
+
+    const resend = getResend()
 
     const { error: emailError } = await resend.emails.send({
       from: FROM,

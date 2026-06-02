@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { resend, FROM } from '@/lib/resend/client'
+import { getResend, FROM } from '@/lib/resend/client'
 import { OrderConfirmation } from '@/lib/resend/templates/OrderConfirmation'
 import { createAdminClient } from '@/lib/supabase/server'
 
@@ -33,6 +33,8 @@ export async function POST(req: NextRequest) {
     if (itemsError) {
       return NextResponse.json({ error: 'Failed to fetch order items' }, { status: 500 })
     }
+
+    const resend = getResend()
 
     const { error } = await resend.emails.send({
       from: FROM,

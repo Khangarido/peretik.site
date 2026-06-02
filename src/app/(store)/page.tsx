@@ -6,23 +6,32 @@ import { ProductGrid } from '@/components/product/ProductGrid'
 import { CountdownTimer } from '@/components/ui/CountdownTimer'
 import type { Product, ProductImage, Variant } from '@/types'
 
-export const revalidate = 60 // ISR: revalidate every 60s
+export const revalidate = 60
 
 export default async function HomePage() {
-  const supabase = await createClient()
+  let featured: Product[] = []
+  let presale: Product[] = []
+  let newArrivals: Product[] = []
 
-  const [featured, presale] = await Promise.all([
-    getFeaturedProducts(supabase),
-    getPresaleProducts(supabase),
-  ])
+  try {
+    const supabase = await createClient()
+    const [f, p] = await Promise.all([
+      getFeaturedProducts(supabase),
+      getPresaleProducts(supabase),
+    ])
+    featured = f
+    presale = p
 
-  // Fetch latest 6 for New Arrivals
-  const { data: newArrivals } = await supabase
-    .from('products')
-    .select('*, images:product_images(*), variants(*)')
-    .eq('status', 'active')
-    .order('created_at', { ascending: false })
-    .limit(6)
+    const { data } = await supabase
+      .from('products')
+      .select('*, images:product_images(*), variants(*)')
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(6)
+    newArrivals = data ?? []
+  } catch {
+    // Supabase not configured yet — render page with empty data
+  }
 
   // First presale end date for countdown
   const firstPresaleEnd = presale[0]?.presale_end_at ?? null
@@ -61,8 +70,8 @@ export default async function HomePage() {
           <h1 className="font-heading text-[clamp(4rem,18vw,14rem)] font-bold leading-none tracking-tight text-white mb-8">
             PERETIK
           </h1>
-          <p className="text-sm sm:text-base text-zinc-400 tracking-[0.25em] uppercase mb-12 max-w-sm mx-auto">
-            Тансаг. Зориг. Монгол.
+          <p className="text-sm sm:text-base text-zinc-500 tracking-[0.3em] uppercase mb-12 max-w-md mx-auto">
+            Raw. Unapologetic. Mongolian.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link
@@ -92,7 +101,7 @@ export default async function HomePage() {
         <div className="flex animate-marquee whitespace-nowrap">
           {Array.from({ length: 8 }).map((_, i) => (
             <span key={i} className="mx-10 text-[10px] tracking-[0.5em] text-zinc-700 uppercase font-medium">
-              PERETIK · MONGOLIAN STREETWEAR · LUXURY · ТАНСАГ · NEW DROP
+              PERETIK · MONGOLIAN STREETWEAR · NOT FOR EVERYONE · BORN IN UB · NEW DROP
             </span>
           ))}
         </div>
@@ -162,9 +171,9 @@ export default async function HomePage() {
         <section className="py-24 px-4 sm:px-6 max-w-7xl mx-auto">
           <div className="flex items-end justify-between mb-12">
             <div>
-              <p className="text-[10px] tracking-[0.4em] text-zinc-500 uppercase mb-3">Latest</p>
+              <p className="text-[10px] tracking-[0.4em] text-zinc-600 uppercase mb-3">New</p>
               <h2 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-none">
-                ШИН ИРЭЛТ
+                Шинэ дроп
               </h2>
             </div>
             <Link
@@ -187,18 +196,18 @@ export default async function HomePage() {
           }}
         />
         <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
-          <p className="text-[10px] tracking-[0.6em] text-[#CA8A04] uppercase mb-8">Brand Statement</p>
-          <blockquote className="font-heading text-[clamp(2rem,6vw,5rem)] font-bold text-white leading-[1.1] mb-8">
-            "Монгол залуусын өмсгөл"
-          </blockquote>
-          <p className="text-sm sm:text-base text-zinc-500 max-w-md mx-auto leading-relaxed">
-            Peretik бол Монголын гудамжны соёл, уламжлал хийгээд орчин үеийн тансаг байдлыг нэгтгэсэн streetwear брэнд. Бид зөвхөн хувцас биш, таны дуу хоолойг дамжуулна.
+          <p className="text-[10px] tracking-[0.6em] text-[#CA8A04] uppercase mb-10">Peretik</p>
+          <h2 className="font-heading text-[clamp(2.5rem,7vw,6rem)] font-bold text-white leading-[1.05] mb-8 tracking-tight">
+            Born in Mongolia.<br />Built for the world.
+          </h2>
+          <p className="text-sm text-zinc-600 max-w-xs mx-auto leading-relaxed tracking-wide">
+            It's not just clothing — it's a statement.
           </p>
           <Link
             href="/shop"
             className="inline-flex items-center gap-2 mt-10 text-xs text-[#CA8A04] hover:text-white border border-[#CA8A04]/30 hover:border-white/30 px-8 py-3 rounded transition-all uppercase tracking-[0.2em]"
           >
-            Дэлгүүрлэх <ArrowRight size={13} />
+            Collection <ArrowRight size={13} />
           </Link>
         </div>
       </section>
