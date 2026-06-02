@@ -6,12 +6,18 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type {
   Product,
+  ProductImage,
+  Variant,
   Order,
   OrderItem,
   OrderStatus,
   CartItem,
   WishlistItem,
   Coupon,
+  Category,
+  User,
+  ProductView,
+  PageEvent,
 } from '@/types'
 
 // ── Input types ───────────────────────────────────────────────────────────────
@@ -463,7 +469,7 @@ export async function updateOrderStatus(
 
 export async function getAllUsers(
   supabase: SupabaseClient
-): Promise<(Omit<import('@/types').User, 'phone'> & { order_count: number; phone?: string | null })[]> {
+): Promise<(User & { order_count: number })[]> {
   const { data: users, error } = await supabase
     .from('users')
     .select('*')
