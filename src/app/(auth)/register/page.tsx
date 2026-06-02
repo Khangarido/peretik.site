@@ -21,14 +21,11 @@ const schema = z.object({
   first_name: z.string().min(1, 'Нэр оруулна уу'),
   last_name: z.string().min(1, 'Овог оруулна уу'),
   email: z.string().email('И-мэйл буруу байна'),
-  phone: z.string()
-    .min(8, 'Утасны дугаар оруулна уу')
-    .max(8, 'Утасны дугаар 8 оронтой байна')
-    .regex(/^[0-9]{8}$/, 'Зөвхөн тоо оруулна уу'),
-  sex: z.enum(['male', 'female', 'other'], { message: 'Хүйс сонгоно уу' }),
-  age: z.coerce.number().min(13, 'Наснаас доош байна').max(100, 'Нас буруу байна'),
+  phone: z.string().min(8, 'Утасны дугаар оруулна уу').max(8, 'Утасны дугаар 8 оронтой байна').regex(/^[0-9]{8}$/, 'Зөвхөн тоо оруулна уу'),
+  sex: z.enum(['male', 'female', 'other'], { error: 'Хүйс сонгоно уу' }),
+  age: z.coerce.number({ error: 'Нас оруулна уу' }).min(13, 'Наснаас доош байна').max(100, 'Нас буруу байна'),
   password: z.string().min(8, 'Нууц үг хамгийн багадаа 8 тэмдэгт байна'),
-  confirmPassword: z.string(),
+  confirmPassword: z.string().min(1, 'Нууц үг давтана уу'),
   terms: z.literal(true, { error: 'Үйлчилгээний нөхцөлийг зөвшөөрнө үү' }),
   marketing: z.boolean().optional(),
 }).refine(data => data.password === data.confirmPassword, {
