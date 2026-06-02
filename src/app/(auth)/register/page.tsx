@@ -26,9 +26,7 @@ const schema = z.object({
     .max(8, 'Утасны дугаар 8 оронтой байна')
     .regex(/^[0-9]{8}$/, 'Зөвхөн тоо оруулна уу'),
   sex: z.enum(['male', 'female', 'other'], { message: 'Хүйс сонгоно уу' }),
-  age: z.coerce.number({ error: 'Нас оруулна уу' })
-    .min(13, 'Наснаас доош байна')
-    .max(100, 'Нас буруу байна'),
+  age: z.coerce.number().min(13, 'Наснаас доош байна').max(100, 'Нас буруу байна'),
   password: z.string().min(8, 'Нууц үг хамгийн багадаа 8 тэмдэгт байна'),
   confirmPassword: z.string(),
   terms: z.literal(true, { error: 'Үйлчилгээний нөхцөлийг зөвшөөрнө үү' }),
