@@ -101,7 +101,9 @@ export default function CheckoutPage() {
 
       clearCart()
       // Redirect to BYL payment
-      window.location.href = data.payment_url
+      if (typeof window !== 'undefined') {
+        window.location.href = data.payment_url
+      }
     } catch (err) {
       toast.error('Алдаа гарлаа')
       setPaying(false)

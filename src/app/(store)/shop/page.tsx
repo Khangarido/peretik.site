@@ -10,7 +10,7 @@ const SEX_OPTIONS = [
   { value: '', label: 'Бүгд' },
   { value: 'male', label: 'Эрэгтэй' },
   { value: 'female', label: 'Эмэгтэй' },
-  { value: 'unisex', label: 'Унисекс' },
+  { value: 'unisex', label: 'Unisex' },
 ]
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Шинэ эхлээд' },

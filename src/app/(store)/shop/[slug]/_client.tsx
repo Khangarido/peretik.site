@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -42,6 +42,7 @@ export function ProductDetailClient({ product, variants, userId }: Props) {
   const [activeImage, setActiveImage] = useState(0)
   const [descOpen, setDescOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [shareUrl, setShareUrl] = useState('')
 
   const images = product.images ?? []
   const name = lang === 'mn' ? product.name_mn : product.name_en
@@ -91,12 +92,17 @@ export function ProductDetailClient({ product, variants, userId }: Props) {
     )
   }
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setShareUrl(window.location.href)
+    }
+  }, [])
+
   const handleShare = async () => {
-    const shareUrl = window.location.href
     try {
-      if (navigator.share) {
+      if (navigator.share && shareUrl) {
         await navigator.share({ title: name, url: shareUrl })
-      } else {
+      } else if (shareUrl) {
         await navigator.clipboard.writeText(shareUrl)
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)

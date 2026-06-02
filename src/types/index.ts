@@ -1,10 +1,17 @@
 export type UserRole = 'admin' | 'customer'
 export type UserLang = 'mn' | 'en'
 
+export type UserSex = 'male' | 'female' | 'other'
+
 export interface User {
   id: string
   email: string
   full_name: string | null
+  first_name: string | null
+  last_name: string | null
+  sex: UserSex | null
+  age: number | null
+  email_marketing_consent: boolean
   role: UserRole
   lang: UserLang
   avatar_url: string | null
