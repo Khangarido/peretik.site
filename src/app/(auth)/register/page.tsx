@@ -31,7 +31,7 @@ const schema = z.object({
     .max(100, 'Нас буруу байна'),
   password: z.string().min(8, 'Нууц үг хамгийн багадаа 8 тэмдэгт байна'),
   confirmPassword: z.string(),
-  terms: z.literal(true, { errorMap: () => ({ message: 'Үйлчилгээний нөхцөлийг зөвшөөрнө үү' }) }),
+  terms: z.literal(true, { error: 'Үйлчилгээний нөхцөлийг зөвшөөрнө үү' }),
   marketing: z.boolean().optional(),
 }).refine(data => data.password === data.confirmPassword, {
   message: 'Нууц үг таарахгүй байна',

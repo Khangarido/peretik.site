@@ -22,10 +22,10 @@ const schema = z.object({
   last_name: z.string().min(1, 'Овог оруулна уу'),
   email: z.string().email('И-мэйл хаяг буруу байна'),
   sex: z.enum(['male', 'female', 'other'], { required_error: 'Хүйс сонгоно уу' }),
-  age: z.coerce.number({ invalid_type_error: 'Нас оруулна уу' }).int().min(13, 'Нас 13-аас их байх ёстой').max(100, 'Нас 100-аас бага байх ёстой'),
+  age: z.coerce.number({ error: 'Нас оруулна уу' }).int().min(13, 'Нас 13-аас их байх ёстой').max(100, 'Нас 100-аас бага байх ёстой'),
   password: z.string().min(8, 'Нууц үг хамгийн багадаа 8 тэмдэгт байх ёстой'),
   confirm_password: z.string(),
-  terms: z.literal(true, { errorMap: () => ({ message: 'Үйлчилгээний нөхцөлийг зөвшөөрнө үү' }) }),
+  terms: z.literal(true, { error: 'Үйлчилгээний нөхцөлийг зөвшөөрнө үү' }),
   marketing: z.boolean().optional(),
 }).refine((d) => d.password === d.confirm_password, {
   message: 'Нууц үг таарахгүй байна',
