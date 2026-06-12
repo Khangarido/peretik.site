@@ -75,10 +75,12 @@ export default function ResetPasswordPage() {
   })
 
   useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getSession().then(({ data }) => {
-      setSessionReady(!!data.session)
-    })
+    async function verifySession() {
+      const supabase = createClient()
+      const { data } = await supabase.auth.getSession()
+      setSessionReady(data.session !== null)
+    }
+    void verifySession()
   }, [])
 
   const onSubmit = async (data: FormData) => {
