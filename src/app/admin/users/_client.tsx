@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { X, TrendingUp, ShoppingBag, Clock } from 'lucide-react'
@@ -62,8 +62,9 @@ function UserDetailPanel({
     setLoading(false)
   }
 
-  // Load on mount
-  useState(() => { loadDetails() })
+  useEffect(() => {
+    void loadDetails()
+  }, [user.id])
 
   const avgOrder = user.order_count > 0 ? user.total_spent / user.order_count : 0
 

@@ -23,7 +23,7 @@ export default async function AdminProductsPage({ searchParams }: Props) {
 
   let query = supabase
     .from('products')
-    .select('*, images:product_images(*)', { count: 'exact' })
+    .select('*, images:product_images(*), variants(*)', { count: 'exact' })
     .order('created_at', { ascending: false })
 
   if (q) {
@@ -86,10 +86,9 @@ export default async function AdminProductsPage({ searchParams }: Props) {
             </tr>
           </thead>
           <tbody>
-            {(products ?? []).map((product: Product & { images?: { url: string }[] }) => {
+            {(products ?? []).map((product: Product) => {
               const img = product.images?.[0]?.url
-              const totalStock = (product as unknown as { variants?: { stock: number }[] }).variants
-                ?.reduce((s: number, v: { stock: number }) => s + v.stock, 0) ?? '—'
+              const totalStock = product.variants?.reduce((s, v) => s + v.stock, 0) ?? 0
 
               return (
                 <tr key={product.id} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
