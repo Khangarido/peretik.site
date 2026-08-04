@@ -83,6 +83,20 @@ export async function proxy(request: NextRequest) {
     const { data } = await supabase.auth.getUser()
     user = data.user
 
+    // Administrators use the dashboard as their home screen. Customers keep
+    // the storefront home page, so this redirect only applies to the root URL.
+    if (user && pathname === '/') {
+      const { data: profile } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      if (profile?.role === 'admin') {
+        return NextResponse.redirect(new URL('/admin', request.url))
+      }
+    }
+
     // ── Admin routes ───────────────────────────────────────────────────────────
     if (isAdminRoute(pathname)) {
       if (!user) {
