@@ -13,18 +13,13 @@ function getExt(file: File): string {
  * Returns the public URL.
  */
 export async function uploadProductImage(file: File, productId: string): Promise<string> {
-  const supabase = createClient()
-  const ext = getExt(file)
-  const path = `products/${productId}/${crypto.randomUUID()}.${ext}`
-
-  const { error } = await supabase.storage
-    .from(PRODUCT_IMAGES_BUCKET)
-    .upload(path, file, { cacheControl: '3600', upsert: false })
-
-  if (error) throw new Error(`Upload failed: ${error.message}`)
-
-  const { data } = supabase.storage.from(PRODUCT_IMAGES_BUCKET).getPublicUrl(path)
-  return data.publicUrl
+  const formData = new FormData()
+  formData.set('file', file)
+  formData.set('slug', productId)
+  const response = await fetch('/api/admin/product-images', { method: 'POST', body: formData })
+  const result = await response.json()
+  if (!response.ok) throw new Error(`Upload failed: ${result.error ?? 'Unknown error'}`)
+  return result.url
 }
 
 /**
