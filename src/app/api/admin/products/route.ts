@@ -11,7 +11,15 @@ export async function POST(request: NextRequest) {
   if (profile?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { product, variants, images } = await request.json()
-  const { data: created, error } = await admin.from('products').insert(product).select('id').single()
+  let slug = product.slug as string
+  let suffix = 2
+  while (true) {
+    const { data: existing } = await admin.from('products').select('id').eq('slug', slug).maybeSingle()
+    if (!existing) break
+    slug = `${product.slug}-${suffix++}`
+  }
+
+  const { data: created, error } = await admin.from('products').insert({ ...product, slug }).select('id').single()
   if (error || !created) return NextResponse.json({ error: error?.message ?? 'Unable to create product' }, { status: 400 })
 
   if (images.length) await admin.from('product_images').insert(images.map((url: string, sort_order: number) => ({ product_id: created.id, url, sort_order })))
