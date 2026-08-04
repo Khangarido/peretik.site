@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 import { getDailyRevenue, getOrderStatusBreakdown } from '@/lib/supabase/queries'
 import { formatPrice } from '@/lib/utils'
 import { DollarSign, ShoppingBag, Users, Package } from 'lucide-react'
@@ -10,7 +10,7 @@ export const metadata = { title: 'Admin Dashboard — Peretik' }
 export const revalidate = 120
 
 export default async function AdminDashboard() {
-  const supabase = await createClient()
+  const supabase = await createAdminClient()
 
   const now = new Date()
   const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
@@ -46,10 +46,12 @@ export default async function AdminDashboard() {
   const revenuePct = lastMonthRevenue > 0 ? Math.round(((totalRevenue - lastMonthRevenue) / lastMonthRevenue) * 100) : null
 
   // Daily revenue (30 days)
-  const dailyRevenue = await getDailyRevenue(supabase, 30)
-
-  // Order status breakdown
-  const statusBreakdown = await getOrderStatusBreakdown(supabase)
+  const [dailyRevenue, statusBreakdown] = await Promise.all([
+    // A missing analytics-table permission should not take the whole admin
+    // workspace down. The cards will show zero until the permission is fixed.
+    getDailyRevenue(supabase, 30).catch(() => []),
+    getOrderStatusBreakdown(supabase).catch(() => []),
+  ])
 
   // Top products by sold quantity
   const productSales = new Map<string, number>()
