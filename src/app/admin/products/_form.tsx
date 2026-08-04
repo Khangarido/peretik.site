@@ -171,9 +171,12 @@ export function ProductForm({ product }: Props) {
         const { error } = await supabase.from('products').update({ ...data, slug }).eq('id', productId)
         if (error) throw error
       } else {
+        const controller = new AbortController()
+        const timeout = window.setTimeout(() => controller.abort(), 15_000)
         const response = await fetch('/api/admin/products', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
           body: JSON.stringify({
             product: { ...data, slug, category_id: data.category_id || null, presale_end_at: data.presale_end_at || null },
             images: uploadedImages.map((image) => image.url),
@@ -186,6 +189,7 @@ export function ProductForm({ product }: Props) {
             })),
           }),
         })
+        window.clearTimeout(timeout)
         const result = await response.json()
         if (!response.ok) throw new Error(result.error ?? 'Unable to create product')
         productId = result.id
