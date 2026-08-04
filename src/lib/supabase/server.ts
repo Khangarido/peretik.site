@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import type { CookieOptions } from '@supabase/ssr'
 
@@ -20,7 +21,7 @@ export async function createClient() {
             cookieStore.set(name, value, options)
           }
         } catch {
-          // Server Component — cookie mutation suppressed intentionally.
+          // Server Component: cookie mutation is intentionally suppressed.
         }
       },
     },
@@ -28,22 +29,13 @@ export async function createClient() {
 }
 
 export async function createAdminClient() {
-  const cookieStore = await cookies()
-
-  return createServerClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll()
-      },
-      setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
-        try {
-          for (const { name, value, options } of cookiesToSet) {
-            cookieStore.set(name, value, options)
-          }
-        } catch {
-          // Server Component — suppressed intentionally.
-        }
-      },
+  // A service client must never inherit a user's browser session. Otherwise
+  // RLS can make an admin look like a customer and cause redirect loops.
+  return createSupabaseClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false,
     },
   })
 }
