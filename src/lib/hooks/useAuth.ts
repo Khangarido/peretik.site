@@ -1,14 +1,12 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { User as AppUser } from '@/types'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 export function useAuth() {
   const supabase = createClient()
-  const router = useRouter()
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [profile, setProfile] = useState<AppUser | null>(null)
   const [loading, setLoading] = useState(true)
@@ -50,16 +48,20 @@ export function useAuth() {
   }, [supabase])
 
   const signOut = useCallback(async () => {
-    const { error } = await supabase.auth.signOut()
+    // Clear the HTTP-only server session first, then clear Supabase's browser
+    // storage. Both are needed because protected routes are checked on server.
+    const response = await fetch('/api/auth/signout', { method: 'POST' })
+    if (!response.ok) throw new Error('Unable to sign out')
+
+    const { error } = await supabase.auth.signOut({ scope: 'local' })
     if (error) throw error
 
-    // Update the client immediately, then re-render server components after
-    // Supabase has removed its auth cookies.
+    // Update the client immediately and use a hard navigation so neither the
+    // App Router cache nor a stale profile can retain the previous session.
     setUser(null)
     setProfile(null)
-    router.replace('/login')
-    router.refresh()
-  }, [router, supabase])
+    window.location.replace('/login')
+  }, [supabase])
 
   return { user, profile, loading, signOut, isAdmin: profile?.role === 'admin' }
 }
