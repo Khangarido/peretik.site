@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/hooks/useAuth'
 import { useWishlistStore } from '@/lib/store/wishlistStore'
 import { useCartStore } from '@/lib/store/cartStore'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,6 +45,14 @@ export function Navbar() {
   }, [pathname])
 
   const isHomepage = pathname === '/'
+
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+    } catch {
+      toast.error('Гарахад алдаа гарлаа. Дахин оролдоно уу.')
+    }
+  }
 
   return (
     <header
@@ -148,7 +157,7 @@ export function Navbar() {
                 )}
                 <DropdownMenuSeparator className="bg-white/[0.08]" />
                 <DropdownMenuItem
-                  onClick={signOut}
+                  onClick={() => void handleSignOut()}
                   className="cursor-pointer gap-2 text-red-400 focus:text-red-400 focus:bg-red-400/5"
                 >
                   <LogOut size={14} /> {t.nav.logout}
@@ -205,7 +214,7 @@ export function Navbar() {
                   {t.nav.admin}
                 </Link>
               )}
-              <button onClick={() => { signOut(); setMobileOpen(false) }}
+              <button onClick={() => { setMobileOpen(false); void handleSignOut() }}
                 className="block text-sm text-red-400 py-2 w-full text-left">
                 {t.nav.logout}
               </button>

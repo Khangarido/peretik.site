@@ -16,6 +16,7 @@ import {
 import { useLangStore } from '@/lib/store/langStore'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 import type { I18nStrings } from '@/lib/i18n/mn'
 
 const navItems = (t: I18nStrings) => [
@@ -32,6 +33,14 @@ export function AdminSidebar() {
   const { t } = useLangStore()
   const { signOut } = useAuth()
   const pathname = usePathname()
+
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+    } catch {
+      toast.error('Гарахад алдаа гарлаа. Дахин оролдоно уу.')
+    }
+  }
 
   return (
     <aside className="w-60 min-h-screen bg-[#0D0D0D] border-r border-white/[0.08] flex flex-col fixed top-0 left-0">
@@ -66,7 +75,7 @@ export function AdminSidebar() {
 
       <div className="px-3 py-4 border-t border-white/[0.08]">
         <button
-          onClick={signOut}
+          onClick={() => void handleSignOut()}
           className="flex items-center gap-3 px-3 py-2.5 w-full rounded text-sm text-zinc-600 hover:text-red-400 hover:bg-red-400/5 transition-all"
         >
           <LogOut size={16} />
