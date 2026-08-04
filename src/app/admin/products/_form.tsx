@@ -164,23 +164,35 @@ export function ProductForm({ product }: Props) {
         }
       }
 
-      // 2. Upsert product
+      // 2. Save through the protected server endpoint. Direct browser writes
+      // are blocked by database row-level security.
       let productId = product?.id
       if (isEdit && productId) {
         const { error } = await supabase.from('products').update({ ...data, slug }).eq('id', productId)
         if (error) throw error
       } else {
-        const { data: newProduct, error } = await supabase
-          .from('products')
-          .insert({ ...data, slug })
-          .select()
-          .single()
-        if (error || !newProduct) throw error
-        productId = newProduct.id
+        const response = await fetch('/api/admin/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            product: { ...data, slug, category_id: data.category_id || null, presale_end_at: data.presale_end_at || null },
+            images: uploadedImages.map((image) => image.url),
+            variants: variants.map((variant) => ({
+              size: variant.size,
+              color: variant.color,
+              sex: variant.sex,
+              stock: Number(variant.stock),
+              sku: variant.sku || null,
+            })),
+          }),
+        })
+        const result = await response.json()
+        if (!response.ok) throw new Error(result.error ?? 'Unable to create product')
+        productId = result.id
       }
 
       // 3. Insert product_images
-      if (uploadedImages.some((img) => img.isNew)) {
+      if (isEdit && uploadedImages.some((img) => img.isNew)) {
         await supabase.from('product_images').delete().eq('product_id', productId)
         await supabase.from('product_images').insert(
           uploadedImages.map((img, i) => ({
@@ -192,8 +204,8 @@ export function ProductForm({ product }: Props) {
       }
 
       // 4. Upsert variants
-      await supabase.from('variants').delete().eq('product_id', productId)
-      await supabase.from('variants').insert(
+      if (isEdit) await supabase.from('variants').delete().eq('product_id', productId)
+      if (isEdit) await supabase.from('variants').insert(
         variants.map((v) => ({
           product_id: productId,
           size: v.size,
