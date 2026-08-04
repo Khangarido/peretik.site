@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 import { getProductAnalytics, getWishlistDemand } from '@/lib/supabase/queries'
 import { formatPrice } from '@/lib/utils'
 import { AnalyticsClient } from './_client'
@@ -14,7 +14,7 @@ function formatDuration(seconds: number): string {
 }
 
 export default async function AdminAnalyticsPage() {
-  const supabase = await createClient()
+  const supabase = await createAdminClient()
 
   // Raw views data
   const { data: rawViews } = await supabase
@@ -24,10 +24,10 @@ export default async function AdminAnalyticsPage() {
   const views = rawViews ?? []
 
   // Product analytics (top 10 by views + avg duration)
-  const productAnalytics = await getProductAnalytics(supabase)
-
-  // Wishlist demand (top 10)
-  const wishlistDemand = await getWishlistDemand(supabase)
+  const [productAnalytics, wishlistDemand] = await Promise.all([
+    getProductAnalytics(supabase).catch(() => []),
+    getWishlistDemand(supabase).catch(() => []),
+  ])
 
   // Merge wishlist ratio with view data
   const viewMap = new Map(productAnalytics.map((p) => [p.product_id, p.view_count]))
