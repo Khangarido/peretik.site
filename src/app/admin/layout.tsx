@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient, createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { AdminSidebar } from '@/components/admin/AdminSidebar'
 
@@ -8,7 +8,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   if (!user) redirect('/login?redirectTo=/admin')
 
-  const { data: profile } = await supabase
+  const admin = await createAdminClient()
+  const { data: profile } = await admin
     .from('users')
     .select('role')
     .eq('id', user.id)

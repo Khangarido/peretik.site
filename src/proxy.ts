@@ -8,6 +8,7 @@ const CHECKOUT_PUBLIC_PATHS = ['/checkout/success', '/checkout/cancel']
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
 const SUPABASE_READY = SUPABASE_URL.startsWith('https://') && SUPABASE_ANON_KEY.length > 10
 
 function isAdminRoute(pathname: string) {
@@ -83,16 +84,31 @@ export async function proxy(request: NextRequest) {
     const { data } = await supabase.auth.getUser()
     user = data.user
 
-    // Administrators use the dashboard as their home screen. Customers keep
-    // the storefront home page, so this redirect only applies to the root URL.
-    if (user && pathname === '/') {
-      const { data: profile } = await supabase
+    // The request's user is verified using the public key above. Use the
+    // server-only key for role lookup so an RLS policy cannot hide a user's
+    // own admin role and accidentally send them to the storefront.
+    let role: string | null = null
+    if (user && (pathname === '/' || isAdminRoute(pathname)) && SUPABASE_SERVICE_KEY) {
+      const roleClient = createServerClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+        cookies: {
+          getAll() {
+            return []
+          },
+          setAll() {},
+        },
+      })
+      const { data: profile } = await roleClient
         .from('users')
         .select('role')
         .eq('id', user.id)
         .single()
+      role = profile?.role ?? null
+    }
 
-      if (profile?.role === 'admin') {
+    // Administrators use the dashboard as their home screen. Customers keep
+    // the storefront home page, so this redirect only applies to the root URL.
+    if (user && pathname === '/') {
+      if (role === 'admin') {
         return NextResponse.redirect(new URL('/admin', request.url))
       }
     }
@@ -105,13 +121,7 @@ export async function proxy(request: NextRequest) {
         return NextResponse.redirect(loginUrl)
       }
 
-      const { data: profile } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile || profile.role !== 'admin') {
+      if (role !== 'admin') {
         return NextResponse.redirect(new URL('/', request.url))
       }
     }
